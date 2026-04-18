@@ -1,0 +1,271 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ef0588dc-7d49-41ee-93b2-dfb6d7f167fe",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://techcrunch.com/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        144,
+        0
+      ],
+      "id": "9052f608-5012-4104-865c-84cd595ded04",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Ты — редактор личного AI/tech дневника в Telegram. Тебе дан список статей за сегодня. Твоя задача — выбрать ОДНУ самую интересную и написать по ней короткий пост.\n\nСписок статей:\n{{ JSON.stringify($json.articles, null, 2) }}\n\nПравила выбора:\n- Выбирай то, что реально меняет индустрию, а не мелкие новости\n- Отдавай приоритет: новые AI-продукты > крупные сделки > обновления моделей > слухи\n- Игнорируй рекламу, пресс-релизы без сути\n\nПравила поста:\n- 3-5 предложений на русском языке\n- Без воды, только суть: что произошло и почему это важно\n- В начале эмодзи 🤖\n- В конце — ссылка на оригинал статьи\n\nВерни ТОЛЬКО готовый текст поста, без пояснений и без markdown.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1104,
+        0
+      ],
+      "id": "4cbb858b-2794-4b5b-a8f5-f380be8f1f7b",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "chatId": "-1003826630590",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1392,
+        0
+      ],
+      "id": "c26918b6-2ea4-49d4-8ada-710f42d7a9a1",
+      "name": "Send a text message",
+      "webhookId": "abf03a90-f5d3-41ec-a289-a195a364e786",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ie362mK8GntIocaS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        144,
+        160
+      ],
+      "id": "0c70871d-0439-43b2-a009-91de372b2f8e",
+      "name": "RSS Read1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        320,
+        80
+      ],
+      "id": "66d9ef56-1168-41a5-ab7f-f5596453529a",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "494eb2e7-efa6-4f6d-8115-de6f89f0de14",
+              "leftValue": "={{ new Date($json.pubDate).getTime() }}",
+              "rightValue": "={{ Date.now() - 24*60*60*1000 }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        528,
+        80
+      ],
+      "id": "ce87ac32-25e6-43fa-bdea-b217562c46c5",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "articles",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        736,
+        80
+      ],
+      "id": "1dd16b6f-9877-4bd5-96b8-67990a05a531",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        208
+      ],
+      "id": "4e5a5b32-ac55-4298-8541-4a2421040186",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "DhTKoK7rRXjNKe9U",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1c9bf437-e325-45c5-aca9-512d9bd3faff",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d24553f920b015a59a0bbcfbc6f842c81e9270f1419fac21a7c49a1bf02d74f8"
+  },
+  "id": "XyFQgiEOSIkXaOiO",
+  "tags": []
+}
